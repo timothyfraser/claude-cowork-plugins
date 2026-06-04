@@ -1,0 +1,8 @@
+{
+  "name": "smartsheet-pat",
+  "version": "1.0.0",
+  "description": "Read, write, share, create, and export Smartsheet sheets using a personal access token. Works regardless of your Smartsheet plan as long as the token comes from a paid account.",
+  "author": {
+    "name": "Timothy Fraser"
+  }
+}

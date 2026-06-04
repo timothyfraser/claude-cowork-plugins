@@ -1,0 +1,16 @@
+{
+  "name": "smartsheet-cowork",
+  "version": "1.0.0",
+  "description": "Smartsheet MCP server (PAT-based) packaged as an MCPB bundle.",
+  "type": "module",
+  "main": "server/index.js",
+  "bin": {
+    "smartsheet-cowork": "server/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

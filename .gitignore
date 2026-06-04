@@ -1,0 +1,20 @@
+# Dependencies — installed fresh per-clone or in CI
+node_modules/
+
+# Bundles — built by CI and attached to releases, not committed
+*.mcpb
+*.plugin
+*-source.tar.gz
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Secrets — never commit
+.env
+.env.*
+*.env
+SHA256SUMS

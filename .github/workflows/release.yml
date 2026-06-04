@@ -1,0 +1,82 @@
+name: Release plugin bundles
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Identify changed/released plugins
+        id: plugins
+        run: |
+          # For now: build every plugin under plugins/. Future tags can encode a plugin name.
+          plugins=$(ls -1 plugins | tr "\n" " ")
+          echo "list=$plugins" >> "$GITHUB_OUTPUT"
+          echo "Building: $plugins"
+
+      - name: Install deps + npm audit per plugin
+        run: |
+          for p in ${{ steps.plugins.outputs.list }}; do
+            echo "::group::npm ci — $p"
+            (cd "plugins/$p" && npm ci --omit=dev)
+            echo "::endgroup::"
+            echo "::group::npm audit — $p"
+            (cd "plugins/$p" && npm audit --omit=dev || true)
+            echo "::endgroup::"
+          done
+
+      - name: Build bundles
+        id: bundles
+        run: |
+          mkdir -p dist
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          for p in ${{ steps.plugins.outputs.list }}; do
+            mcpb_name="${p}-cowork-${tag}.mcpb"
+            plugin_name="${p}-pat-${tag}.plugin"
+            tar_name="${p}-${tag}-source.tar.gz"
+
+            # .mcpb (Claude Desktop) — flat zip of plugin dir contents, manifest.json at root
+            (cd "plugins/$p" && zip -rq "../../dist/$mcpb_name" . -x "*.DS_Store" "*.git*")
+
+            # .plugin (Cowork) — requires .claude-plugin/plugin.json checked into the plugin dir.
+            if [ ! -f "plugins/$p/.claude-plugin/plugin.json" ]; then
+              echo "::error::plugins/$p is missing .claude-plugin/plugin.json — cannot build .plugin bundle"
+              exit 1
+            fi
+            (cd "plugins/$p" && zip -rq "../../dist/$plugin_name" . -x "*.DS_Store" "*.git*")
+
+            # source archive (no node_modules)
+            tar czf "dist/$tar_name" \
+              --exclude='plugins/'"$p"'/node_modules' \
+              --exclude='plugins/'"$p"'/package-lock.json' \
+              "plugins/$p"
+          done
+          ls -lh dist/
+
+      - name: Generate SHA256SUMS
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create GitHub Release with assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            dist/*
