@@ -1,0 +1,6 @@
+{
+  "name": "program-assistant",
+  "version": "1.0.0",
+  "description": "Ask the Cornell Systems Engineering program assistant — grounded, cited answers from the program knowledge base via a Cornell-hosted n8n RAG workflow. Supports /name skills.",
+  "author": { "name": "Timothy Fraser" }
+}
