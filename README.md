@@ -6,9 +6,13 @@ A small suite of MCP plugins for Claude Cowork and Claude Desktop, built by [Tim
 
 | Plugin | Version | What it does |
 |---|---|---|
+| [program-assistant](plugins/program-assistant/) | 1.0.0 | Grounded, cited answers about the Cornell Systems Engineering program — courses, faculty, forms, deadlines — via a Cornell-hosted RAG service. |
 | [smartsheet](plugins/smartsheet/) | 1.0.0 | Read, write, share, create, copy, delete, and export Smartsheet sheets using your Smartsheet personal access token. Works on any paid plan. |
+| [smartsheet-query](plugins/smartsheet-query/) | 1.0.0 | Read-only Smartsheet lookups via a shared, Cornell-hosted n8n MCP — no local install; uses a shared access token from the program admin. |
+| [smartsheet-user](plugins/smartsheet-user/) | 1.0.0 | Read your *own* Smartsheet account from Claude, scoped to your personal access token via a Cornell-hosted n8n webhook (per-user identity, no shared service account). |
+| [canvas-faculty](plugins/canvas-faculty/) | 1.0.0 | Ask about your *own* Cornell Canvas courses and students — per-faculty, FERPA-scoped to your Canvas token via a Cornell-hosted n8n agent. |
 
-More plugins planned: Outlook (mail + calendar), Box (file access), Canvas (LMS).
+More planned: Box (file access). Outlook (mail + calendar) is available as the built-in Cowork Microsoft 365 connector rather than a plugin here.
 
 ## Installation (for non-coders)
 

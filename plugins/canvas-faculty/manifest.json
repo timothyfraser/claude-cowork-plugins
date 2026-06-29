@@ -1,0 +1,53 @@
+{
+  "manifest_version": "0.3",
+  "name": "canvas-faculty",
+  "display_name": "SysEng Canvas Faculty Assistant",
+  "version": "1.0.0",
+  "description": "Ask about YOUR OWN Cornell Canvas courses and students. Per-faculty, FERPA-scoped: every Canvas call is scoped to your personal Canvas token, so you only ever see your own courses. Powered by a Cornell-hosted n8n agent + the Cornell LiteLLM gateway.",
+  "long_description": "A thin Cowork/MCP front-end over the program's 'Canvas: Faculty Agent' n8n webhook. The single tool `ask_canvas` sends your question to the webhook, forwarding your OWN Canvas API token as the X-Canvas-Token header (per-user scoping — under FERPA, one faculty member must never see another's student data) plus a shared cohort gate key as the X-Gate-Key header (the webhook validates this and returns 403 if it is missing or wrong). The agent runs read-only Canvas tools (list courses, list/search students, overlap, grade trajectory, assignment analytics) entirely on Cornell infrastructure. No Canvas data or LLM keys leave Cornell infra; your token and the gate key live ONLY in this plugin's local config (OS keychain).",
+  "author": { "name": "Timothy Fraser" },
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"],
+      "env": {
+        "CANVAS_WEBHOOK_URL": "${user_config.canvas_webhook_url}",
+        "CANVAS_API_TOKEN": "${user_config.canvas_api_token}",
+        "CANVAS_GATE_KEY": "${user_config.canvas_gate_key}"
+      }
+    }
+  },
+  "user_config": {
+    "canvas_webhook_url": {
+      "type": "string",
+      "title": "Canvas faculty webhook URL",
+      "description": "The n8n webhook for the Canvas faculty agent, e.g. https://n8n-dev.lcmain.aaii.cucloud.net/webhook/canvas-faculty",
+      "required": true
+    },
+    "canvas_api_token": {
+      "type": "string",
+      "title": "Your Canvas API token (X-Canvas-Token)",
+      "description": "YOUR OWN Canvas API access token. Generate it in Canvas: Account -> Settings -> Approved Integrations -> New Access Token. This stays on your machine and scopes every query to your courses only. See the onboarding guide.",
+      "sensitive": true,
+      "required": true
+    },
+    "canvas_gate_key": {
+      "type": "string",
+      "title": "Gate key (X-Gate-Key)",
+      "description": "Shared cohort gate secret the webhook requires before doing any work. Get it from the program administrator. Stored locally only.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "tools": [
+    { "name": "ask_canvas", "description": "Ask about your own Canvas courses/students; returns a grounded answer scoped to your Canvas token." }
+  ],
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": { "node": ">=18.0.0" }
+  }
+}

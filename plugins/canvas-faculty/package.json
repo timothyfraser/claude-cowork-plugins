@@ -1,0 +1,16 @@
+{
+  "name": "canvas-faculty",
+  "version": "1.0.0",
+  "description": "Cowork/MCP front-end for the Cornell Systems Engineering per-faculty Canvas assistant (calls a header-authed n8n webhook with the faculty member's own Canvas token).",
+  "type": "module",
+  "main": "server/index.js",
+  "bin": {
+    "canvas-faculty": "server/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

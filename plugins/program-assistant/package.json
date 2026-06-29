@@ -1,0 +1,16 @@
+{
+  "name": "program-assistant",
+  "version": "1.0.0",
+  "description": "Cowork/MCP front-end for the Cornell Systems Engineering program RAG assistant (calls an n8n webhook).",
+  "type": "module",
+  "main": "server/index.js",
+  "bin": {
+    "program-assistant": "server/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}
