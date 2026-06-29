@@ -1,11 +1,11 @@
 {
-  "name": "smartsheet-cowork",
+  "name": "smartsheet",
   "version": "1.0.0",
-  "description": "Smartsheet MCP server (PAT-based) packaged as an MCPB bundle.",
+  "description": "Cowork/MCP front-end for per-user Smartsheet access (calls a Cornell n8n webhook with the caller's own PAT).",
   "type": "module",
   "main": "server/index.js",
   "bin": {
-    "smartsheet-cowork": "server/index.js"
+    "smartsheet": "server/index.js"
   },
   "engines": {
     "node": ">=18.0.0"

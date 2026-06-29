@@ -1,5 +1,5 @@
 ---
-name: smartsheet-user
+name: smartsheet
 description: How to use the per-user Smartsheet connector (smartsheet_whoami, smartsheet_list_sheets, smartsheet_get_sheet, smartsheet_search, smartsheet_list_workspaces). Use whenever a user asks about THEIR Smartsheet sheets, rows, workspaces, or wants to look something up in Smartsheet. Every action is scoped to the user's own Smartsheet account via their personal access token.
 ---
 
