@@ -1,6 +1,0 @@
-{
-  "name": "smartsheet-query",
-  "version": "1.0.0",
-  "description": "Read-only Smartsheet querying for Cornell Systems Engineering staff via the program's n8n MCP server (shared, governed PAT — no local install).",
-  "author": { "name": "Timothy Fraser" }
-}

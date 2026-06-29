@@ -1,48 +1,69 @@
-# Smartsheet (PAT) — Claude plugin
+# Smartsheet (per-user) — Cowork/MCP plugin
 
-A local MCP server that connects Claude (Cowork or Desktop) to Smartsheet using a personal access token. Works on any paid Smartsheet plan — it does not require Business/Enterprise/AWM the way the official Smartsheet MCP at `mcp.smartsheet.com` does.
+Lets Claude (Cowork or Desktop) read **your own** Smartsheet account. You paste your personal Smartsheet token once; every action is scoped to what *your* Smartsheet account can see — never anyone else's.
 
-## What's inside
+## What it does
 
-- **MCP server** (`server/index.js`, Node 18+, no external runtime). 22 tools across reads, row CRUD, sharing, sheet lifecycle, column edits, and Excel/CSV export. See [CHANGELOG.md](CHANGELOG.md) for the full list.
-- **Skill** (`skills/smartsheet-workflows/SKILL.md`) — teaches Claude the right call order (discover → get columns → write) and how to shape row, share, and column payloads.
-- **Manifest** (`manifest.json`) — declares user config so the client prompts for the API token on install and stores it in the OS keychain.
-- **Cowork manifest** (`.claude-plugin/plugin.json`) — added during the release build for the `.plugin` bundle.
+Five read tools, each routed through a Cornell-hosted n8n webhook:
 
-## Install
+| tool | does |
+|---|---|
+| `smartsheet_whoami` | confirm which account the token belongs to (email/name) |
+| `smartsheet_list_sheets` | list the sheets you can access |
+| `smartsheet_get_sheet(sheetId)` | full columns + rows of one sheet |
+| `smartsheet_search(query)` | search your accessible Smartsheet content |
+| `smartsheet_list_workspaces` | list the workspaces you can access |
 
-Get the bundle from the [Releases page](https://github.com/timothyfraser/claude-cowork-plugins/releases/latest):
+## Architecture & why per-user
 
-- Claude Desktop → `*.mcpb`
-- Claude Cowork → `*.plugin`
+```
+Claude (Cowork)  →  smartsheet_* tool  →  POST n8n /webhook/smartsheet-user
+                                            headers: X-Smartsheet-Token: <YOUR PAT>
+                                            body:    { tool, ...args }
+                                          →  HTTP Request → Smartsheet REST v2
+                                             Authorization: Bearer <YOUR PAT>
+                                          →  JSON result
+```
 
-Double-click the downloaded file. The client opens an install dialog. Paste a Smartsheet personal access token (see below for how to generate one), leave the API base URL alone unless you're on the EU or Gov region, optionally set an export directory, click Install.
+Each user supplies **their own** Smartsheet Personal Access Token (PAT). The plugin forwards it as a request header; the webhook reads that header per-request and calls Smartsheet as that token's owner. So person A only accesses what's been shared with person A — there is **no shared service account**, and the PAT is the security boundary.
 
-To generate a token: Smartsheet → click your profile icon (lower left) → **Personal Settings** → **API Access** → **Generate new access token**. Paid plans only — Smartsheet's free / individual tier cannot generate tokens.
+Routing through n8n (rather than calling Smartsheet directly from the plugin) is intentional: the same webhook can be extended with richer workflows later without re-shipping the plugin.
 
-To verify the install: in any chat, ask *"Use Smartsheet to list the sheets I have access to."* If you see your sheets, you're connected.
+**Your token lives ONLY in this plugin's local config (OS keychain).** It is never bundled, never committed, and never sent anywhere but the Cornell n8n webhook over HTTPS.
 
-## What it can do
+## Install & configure
 
-Anything the PAT's user can do via the Smartsheet UI:
+See **[ONBOARDING.md](./ONBOARDING.md)** for the zero-coding, step-by-step version (for non-coders).
 
-- **Read** sheets, columns, workspaces, search results, who-shares-what
-- **Edit** rows (add, update, delete) and columns (add, rename, delete)
-- **Share** sheets with users / groups and change their access level (Viewer → Editor → Admin)
-- **Create** new sheets from scratch or by copying an existing one; delete them
-- **Export** sheets to Excel (.xlsx) or CSV files on your disk
-- **Identify** which Smartsheet account the PAT belongs to (`whoami`)
+Short version:
+1. Install the plugin (Cowork plugin, or the `.mcpb` in Claude Desktop → Settings → Extensions).
+2. When prompted, set:
+   - **Smartsheet webhook URL** — defaults to `https://n8n-dev.lcmain.aaii.cucloud.net/webhook/smartsheet-user`.
+   - **Your Smartsheet Personal Access Token** — generate in Smartsheet (Account → Personal Settings → API Access → Generate new access token).
+3. Try: *"Use smartsheet_whoami"* → should show **your** email. Then *"List my Smartsheets."*
 
-See [CHANGELOG.md](CHANGELOG.md) for the full v1.0 tool list.
+## Config (env / user_config)
 
-## What it can't do (yet)
+| var | meaning |
+|---|---|
+| `SMARTSHEET_WEBHOOK_URL` | the n8n per-user Smartsheet webhook endpoint |
+| `SMARTSHEET_USER_PAT` | **your own** Smartsheet PAT, sent as `X-Smartsheet-Token` |
+| `SMARTSHEET_TOKEN_HEADER` | header name (default `X-Smartsheet-Token`) |
+| `SMARTSHEET_GATE_TOKEN` | (optional) shared gate-header secret if the webhook is hardened — see below |
+| `SMARTSHEET_GATE_HEADER` | gate header name (default `X-Gate-Token`) |
+| `SMARTSHEET_TIMEOUT_MS` | request timeout (default 60000) |
 
-Attachments, discussions, webhooks, cross-sheet references, report CRUD, dashboards, and cell-format edits. The Smartsheet REST API supports all of these — they're just not wrapped here yet. PRs welcome.
+## Local dev / test
 
-If you need any of those right now and your account is Business/Enterprise/AWM, the official Smartsheet MCP at `mcp.smartsheet.com` covers them.
+```bash
+npm install
+SMARTSHEET_WEBHOOK_URL=https://n8n-dev.lcmain.aaii.cucloud.net/webhook/smartsheet-user \
+SMARTSHEET_USER_PAT=<your-pat> \
+  node server/index.js   # stdio MCP; drive with any MCP client
+```
 
-## Trust model
+## Trust & security model
 
-The token has the same read/write access its user has across Smartsheet. Treat it like a password. The token lives in your OS keychain (macOS Keychain, Windows Credential Manager) once you enter it in the install dialog — never in a plain-text config. Revoke it in Smartsheet's API Access tab if it leaks, if you suspect your laptop has been compromised, or as part of annual rotation.
-
-This plugin makes no outbound calls to anywhere other than `api.smartsheet.com` (or `api.smartsheet.eu` / `api.smartsheetgov.com` if you change the base URL). No telemetry.
+- Your PAT = your identity = your access. The webhook can only ever act as the token's owner; it cannot escalate to anyone else's data.
+- Treat your PAT like a password. To rotate: revoke it in Smartsheet (API Access), generate a new one, and re-enter it in the plugin settings.
+- **Optional hardening (off by default):** the webhook can additionally require a shared "gate" header (`X-Gate-Token`) so only people who also hold a shared secret can reach it. If the administrator enables that on the webhook, set `SMARTSHEET_GATE_TOKEN` in the plugin config. By default the per-user PAT alone is the boundary (minimum friction is the priority).

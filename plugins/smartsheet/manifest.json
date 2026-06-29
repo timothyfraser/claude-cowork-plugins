@@ -1,13 +1,11 @@
 {
   "manifest_version": "0.3",
-  "name": "smartsheet-cowork",
-  "display_name": "Smartsheet (PAT)",
+  "name": "smartsheet",
+  "display_name": "Smartsheet (your account)",
   "version": "1.0.0",
-  "description": "Read, write, share, and create Smartsheet sheets via the REST API using a personal access token. Works regardless of your account plan as long as the token comes from a paid account.",
-  "long_description": "A local MCP server that wraps the Smartsheet REST v2 API. Unlike the official Smartsheet MCP at mcp.smartsheet.com (which requires Business/Enterprise/AWM on the calling account), this bundle just needs a personal access token from any paid account. v1.0 covers reading, writing, deleting, searching, sharing (with view/edit access levels), creating/copying/deleting sheets, editing columns, exporting to xlsx/csv, plus an auth-check 'whoami'. The token is stored in the OS keychain.",
-  "author": {
-    "name": "Timothy Fraser"
-  },
+  "description": "Query YOUR OWN Smartsheet account from Claude. You paste your personal Smartsheet token once; every action is scoped to what your Smartsheet account can see — nobody else's. Powered by a Cornell-hosted n8n webhook.",
+  "long_description": "A thin Cowork/MCP front-end over the Cornell n8n \"Smartsheet (per-user)\" webhook. Each tool sends your OWN Smartsheet Personal Access Token (PAT) to the webhook in the X-Smartsheet-Token header; the webhook does the Smartsheet REST v2 work scoped to that token's account. There is no shared service account — your PAT is your identity and your security boundary, so you only ever access sheets owned by or shared with you. Your token is stored ONLY in this plugin's local config (OS keychain): never bundled, never committed, never sent anywhere but the Cornell n8n webhook over HTTPS. Tools: smartsheet_whoami, smartsheet_list_sheets, smartsheet_get_sheet, smartsheet_search, smartsheet_list_workspaces.",
+  "author": { "name": "Timothy Fraser" },
   "icon": "icon.png",
   "server": {
     "type": "node",
@@ -16,63 +14,37 @@
       "command": "node",
       "args": ["${__dirname}/server/index.js"],
       "env": {
-        "SMARTSHEET_API_TOKEN": "${user_config.smartsheet_api_token}",
-        "SMARTSHEET_API_BASE": "${user_config.smartsheet_api_base}",
-        "SMARTSHEET_EXPORT_DIR": "${user_config.smartsheet_export_dir}"
+        "SMARTSHEET_WEBHOOK_URL": "${user_config.smartsheet_webhook_url}",
+        "SMARTSHEET_USER_PAT": "${user_config.smartsheet_user_pat}"
       }
     }
   },
   "user_config": {
-    "smartsheet_api_token": {
+    "smartsheet_webhook_url": {
       "type": "string",
-      "title": "Smartsheet API token",
-      "description": "Personal access token generated from a Smartsheet Business/Enterprise/AWM account (Account → Personal Settings → API Access → Generate new access token).",
-      "sensitive": true,
+      "title": "Smartsheet webhook URL",
+      "description": "The Cornell n8n webhook for the per-user Smartsheet connector, e.g. https://n8n-dev.lcmain.aaii.cucloud.net/webhook/smartsheet-user",
+      "default": "https://n8n-dev.lcmain.aaii.cucloud.net/webhook/smartsheet-user",
       "required": true
     },
-    "smartsheet_api_base": {
+    "smartsheet_user_pat": {
       "type": "string",
-      "title": "API base URL",
-      "description": "Leave as the default unless using Smartsheet Regions (EU: https://api.smartsheet.eu/2.0, Gov: https://api.smartsheetgov.com/2.0).",
-      "default": "https://api.smartsheet.com/2.0",
-      "required": false
-    },
-    "smartsheet_export_dir": {
-      "type": "string",
-      "title": "Sheet export folder",
-      "description": "Where `export_sheet` saves downloaded .xlsx / .csv files. Defaults to ~/smartsheet-exports/. Use an absolute path.",
-      "required": false
+      "title": "Your Smartsheet Personal Access Token",
+      "description": "YOUR OWN Smartsheet API token. Generate it in Smartsheet: Account (bottom-left) -> Personal Settings -> API Access -> Generate new access token. This scopes everything to your own Smartsheet account. See ONBOARDING.md for step-by-step.",
+      "sensitive": true,
+      "required": true
     }
   },
   "tools": [
-    { "name": "whoami", "description": "Return who the PAT belongs to. Cheap auth-check." },
-    { "name": "list_sheets", "description": "List all sheets accessible to the token holder." },
-    { "name": "get_sheet", "description": "Get a sheet's columns and rows by sheet ID." },
-    { "name": "get_columns", "description": "Get a sheet's column definitions (column IDs, types, titles)." },
-    { "name": "search", "description": "Full-text search across all accessible Smartsheet content." },
-    { "name": "list_workspaces", "description": "List workspaces accessible to the token holder." },
-    { "name": "get_workspace", "description": "Get a workspace's contents (folders, sheets, reports, dashboards)." },
-    { "name": "list_personal_folder", "description": "List sheets and folders in the user's personal Home folder." },
-    { "name": "add_rows", "description": "Append one or more rows to a sheet." },
-    { "name": "update_rows", "description": "Update cells in existing rows by row ID." },
-    { "name": "delete_rows", "description": "Delete one or more rows by row ID." },
-    { "name": "list_shares", "description": "List who a sheet is shared with and their access levels." },
-    { "name": "share_sheet", "description": "Share a sheet with a user or group at a given access level (VIEWER/EDITOR/EDITOR_SHARE/ADMIN/OWNER)." },
-    { "name": "update_share", "description": "Change someone's access level on a shared sheet (e.g., promote viewer to editor)." },
-    { "name": "unshare", "description": "Revoke a user's or group's access to a sheet." },
-    { "name": "create_sheet", "description": "Create a new sheet (blank or with specified columns)." },
-    { "name": "delete_sheet", "description": "Delete a sheet by ID (destructive)." },
-    { "name": "copy_sheet", "description": "Copy an existing sheet to a folder, workspace, or home." },
-    { "name": "add_columns", "description": "Add columns to an existing sheet." },
-    { "name": "update_columns", "description": "Update a column's title, type, or picklist options." },
-    { "name": "delete_columns", "description": "Delete a column from a sheet (destructive)." },
-    { "name": "export_sheet", "description": "Download a sheet as Excel (.xlsx) or CSV, saved to disk." }
+    { "name": "smartsheet_whoami", "description": "Confirm which Smartsheet account this connector is acting as (your email/name)." },
+    { "name": "smartsheet_list_sheets", "description": "List the sheets your Smartsheet account can access." },
+    { "name": "smartsheet_get_sheet", "description": "Get one sheet's columns + rows by sheetId." },
+    { "name": "smartsheet_search", "description": "Search your accessible Smartsheet content for a text query." },
+    { "name": "smartsheet_list_workspaces", "description": "List the workspaces your Smartsheet account can access." }
   ],
   "compatibility": {
     "claude_desktop": ">=0.10.0",
     "platforms": ["darwin", "win32", "linux"],
-    "runtimes": {
-      "node": ">=18.0.0"
-    }
+    "runtimes": { "node": ">=18.0.0" }
   }
 }
