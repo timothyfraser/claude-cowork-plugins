@@ -1,0 +1,45 @@
+{
+  "manifest_version": "0.3",
+  "name": "program-assistant",
+  "display_name": "SysEng Program Assistant",
+  "version": "1.0.0",
+  "description": "Ask the Cornell Systems Engineering program assistant. Grounded, cited answers from the program's course roster, faculty directory, website, and official forms — powered by a Cornell-hosted n8n RAG workflow. Supports /name skills.",
+  "long_description": "A thin Cowork/MCP front-end over the program's Retrieval-Augmented-Generation engine. The single tool `ask_program` sends a question to a header-authed n8n webhook on Cornell infrastructure, which runs hybrid retrieval over the curated program knowledge base and answers with inline [n] citations (declining when the answer isn't in the sources). No corpus or model API keys live in this plugin — only the webhook URL and a shared token, stored in the OS keychain. Supports named skills via `/skill-name` (e.g. `/who-to-contact`, `/course-planning`, `/forms-and-deadlines`).",
+  "author": { "name": "Timothy Fraser" },
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"],
+      "env": {
+        "RAG_WEBHOOK_URL": "${user_config.rag_webhook_url}",
+        "RAG_WEBHOOK_TOKEN": "${user_config.rag_webhook_token}"
+      }
+    }
+  },
+  "user_config": {
+    "rag_webhook_url": {
+      "type": "string",
+      "title": "RAG webhook URL",
+      "description": "The n8n webhook that runs the program RAG, e.g. https://n8n-dev.lcmain.aaii.cucloud.net/webhook/rag-ask",
+      "required": true
+    },
+    "rag_webhook_token": {
+      "type": "string",
+      "title": "Webhook token (X-RAG-Token)",
+      "description": "Shared secret the webhook requires in the X-RAG-Token header. Get it from the program administrator.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "tools": [
+    { "name": "ask_program", "description": "Ask the Systems Engineering program assistant; returns a grounded, cited answer (+ sources). Supports /name skills." }
+  ],
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": { "node": ">=18.0.0" }
+  }
+}
