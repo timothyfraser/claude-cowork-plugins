@@ -29,9 +29,12 @@ A "token" is just a long password that lets Claude act as **you** in Smartsheet 
 
 1. In Claude, open the **Smartsheet (your account)** plugin settings.
    - (Cowork: open the plugin's settings/configure panel. Claude Desktop: **Settings → Extensions → Smartsheet (your account) → Configure**.)
-2. You'll see two boxes:
+2. You'll see three settings:
    - **Smartsheet webhook URL** — leave this as it is (it's already filled in for you).
    - **Your Smartsheet Personal Access Token** — **paste your token here** (the one you copied in step A).
+   - **Allow write actions (add/update/delete rows)** — **leave OFF** for now. Turn it ON later only if
+     you want Claude to be able to add/update/delete rows on your behalf. (Your token's own permissions are
+     still the hard limit — this toggle is an extra explicit gate.)
 3. Save / Done.
 
 That's it. You're connected.
@@ -65,6 +68,9 @@ Then try:
 
 - ✅ **Look things up**: list your sheets and workspaces, open a sheet's contents, search across your Smartsheet.
 - 🔒 **Stays as you**: it can never reach anyone else's Smartsheet data — only yours.
-- ✋ It's built for **reading/looking up**, not for editing sheets.
+- ✏️ **Optional editing**: if you turn ON the **"Allow write actions"** setting in the plugin (off by default),
+  Claude can also add new rows, update rows, or delete rows on your behalf. Your Smartsheet token's permissions
+  are still the hard limit, so it can only do what your account can do; the toggle is just an extra "yes, I
+  meant to allow this" gate. Leave it OFF if you only want read access.
 
 Your token stays only on your own machine (in Claude's secure settings). It is never shared, never stored in any shared file, and only ever used to talk to your Smartsheet through Cornell's own server.
