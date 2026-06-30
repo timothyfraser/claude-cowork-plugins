@@ -13,9 +13,10 @@
  * never committed, never sent anywhere but the Cornell n8n webhook over HTTPS.
  *
  * Config (user_config -> env):
- *   SMARTSHEET_WEBHOOK_URL   e.g. https://n8n-dev.lcmain.aaii.cucloud.net/webhook/smartsheet-user
- *   SMARTSHEET_USER_PAT      the user's own Smartsheet Personal Access Token
- *   SMARTSHEET_GATE_TOKEN    (optional) shared gate-header secret, if the webhook is hardened
+ *   SMARTSHEET_WEBHOOK_URL    e.g. https://n8n-dev.lcmain.aaii.cucloud.net/webhook/smartsheet-user
+ *   SMARTSHEET_USER_PAT       the user's own Smartsheet Personal Access Token
+ *   SMARTSHEET_ENABLE_WRITE   "true" to register add_rows/update_rows/delete_rows (default off)
+ *   SMARTSHEET_GATE_TOKEN     (optional) shared gate-header secret, if the webhook is hardened
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -31,6 +32,10 @@ const TOKEN_HEADER = process.env.SMARTSHEET_TOKEN_HEADER || "X-Smartsheet-Token"
 const GATE_TOKEN = process.env.SMARTSHEET_GATE_TOKEN; // optional hardening
 const GATE_HEADER = process.env.SMARTSHEET_GATE_HEADER || "X-Gate-Token";
 const TIMEOUT_MS = Number(process.env.SMARTSHEET_TIMEOUT_MS || 60000);
+// Explicit write gate. Off by default — even with a write-scoped PAT, no write tools
+// are registered until the user opts in. The user's PAT permissions remain the hard
+// backstop; this toggle is the explicit consent layer.
+const WRITE_ENABLED = /^(1|true|yes|on)$/i.test(String(process.env.SMARTSHEET_ENABLE_WRITE || ""));
 
 if (!WEBHOOK_URL) {
   console.error("SMARTSHEET_WEBHOOK_URL is not set. Configure it in the plugin settings.");
@@ -110,6 +115,51 @@ const tools = {
     handler: async () => ok(await callWebhook("list_workspaces")),
   },
 };
+
+// Write tools — only registered when SMARTSHEET_ENABLE_WRITE is on. The Smartsheet
+// add/update/delete row APIs all run under the user's PAT, so write is also gated by
+// what their token can do; the toggle is the explicit per-user opt-in.
+if (WRITE_ENABLED) {
+  tools.smartsheet_add_rows = {
+    description:
+      "Append one or more new rows to a Smartsheet sheet. Pass `rows` as either a single row object or an array of row objects, each shaped { cells: [ { columnId: <number>, value: <any> }, ... ], toBottom?: true, toTop?: true }. Get columnIds via smartsheet_get_sheet. Requires the configured Smartsheet token to have write permission on the sheet. (Write tools are only available because you enabled the 'Allow write actions' setting.)",
+    inputSchema: {
+      type: "object",
+      required: ["sheetId", "rows"],
+      properties: {
+        sheetId: { type: ["string", "number"], description: "Target sheet id (from list_sheets/search)." },
+        rows: { description: "One row object or an array of row objects to add (see Smartsheet 'Add Rows' docs for the row shape)." },
+      },
+    },
+    handler: async ({ sheetId, rows }) => ok(await callWebhook("add_rows", { sheetId, rows })),
+  };
+  tools.smartsheet_update_rows = {
+    description:
+      "Update one or more existing rows on a Smartsheet sheet. Pass `rows` as either a single row object or an array, each shaped { id: <rowId>, cells: [ { columnId: <number>, value: <any> }, ... ] }. Get rowIds via smartsheet_get_sheet. Requires the configured token to have write permission. (Write tools are only available because you enabled the 'Allow write actions' setting.)",
+    inputSchema: {
+      type: "object",
+      required: ["sheetId", "rows"],
+      properties: {
+        sheetId: { type: ["string", "number"], description: "Target sheet id (from list_sheets/search)." },
+        rows: { description: "One row object or an array of row objects to update (each must include the rowId in `id`)." },
+      },
+    },
+    handler: async ({ sheetId, rows }) => ok(await callWebhook("update_rows", { sheetId, rows })),
+  };
+  tools.smartsheet_delete_rows = {
+    description:
+      "Delete one or more rows from a Smartsheet sheet by their row ids. `rowIds` is an array of numeric row ids (from smartsheet_get_sheet). Rows that don't exist are silently ignored. Requires the configured token to have write permission. (Write tools are only available because you enabled the 'Allow write actions' setting.)",
+    inputSchema: {
+      type: "object",
+      required: ["sheetId", "rowIds"],
+      properties: {
+        sheetId: { type: ["string", "number"], description: "Target sheet id (from list_sheets/search)." },
+        rowIds: { type: "array", items: { type: ["string", "number"] }, description: "Array of row ids to delete." },
+      },
+    },
+    handler: async ({ sheetId, rowIds }) => ok(await callWebhook("delete_rows", { sheetId, rowIds })),
+  };
+}
 
 const server = new Server(
   { name: "smartsheet", version: "1.0.0" },
