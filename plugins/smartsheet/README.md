@@ -4,15 +4,23 @@ Lets Claude (Cowork or Desktop) read **your own** Smartsheet account. You paste 
 
 ## What it does
 
-Five read tools, each routed through a Cornell-hosted n8n webhook:
+Five read tools (always on) plus three write tools (off by default, opt-in via a config toggle), all routed
+through a Cornell-hosted n8n webhook:
 
-| tool | does |
-|---|---|
-| `smartsheet_whoami` | confirm which account the token belongs to (email/name) |
-| `smartsheet_list_sheets` | list the sheets you can access |
-| `smartsheet_get_sheet(sheetId)` | full columns + rows of one sheet |
-| `smartsheet_search(query)` | search your accessible Smartsheet content |
-| `smartsheet_list_workspaces` | list the workspaces you can access |
+| tool | type | does |
+|---|---|---|
+| `smartsheet_whoami` | read | confirm which account the token belongs to (email/name) |
+| `smartsheet_list_sheets` | read | list the sheets you can access |
+| `smartsheet_get_sheet(sheetId)` | read | full columns + rows of one sheet |
+| `smartsheet_search(query)` | read | search your accessible Smartsheet content |
+| `smartsheet_list_workspaces` | read | list the workspaces you can access |
+| `smartsheet_add_rows(sheetId, rows)` | write* | append rows to a sheet |
+| `smartsheet_update_rows(sheetId, rows)` | write* | update existing rows by row id |
+| `smartsheet_delete_rows(sheetId, rowIds)` | write* | delete rows by id |
+
+\* The write tools are only registered when the **"Allow write actions"** config toggle is ON
+(`smartsheet_enable_write`, default OFF). Your Smartsheet token's permissions remain the hard backstop —
+the toggle is an explicit consent gate on top.
 
 ## Architecture & why per-user
 
@@ -48,6 +56,7 @@ Short version:
 |---|---|
 | `SMARTSHEET_WEBHOOK_URL` | the n8n per-user Smartsheet webhook endpoint |
 | `SMARTSHEET_USER_PAT` | **your own** Smartsheet PAT, sent as `X-Smartsheet-Token` |
+| `SMARTSHEET_ENABLE_WRITE` | `true`/`1`/`yes`/`on` registers the write tools; anything else (or empty) = read-only |
 | `SMARTSHEET_TOKEN_HEADER` | header name (default `X-Smartsheet-Token`) |
 | `SMARTSHEET_GATE_TOKEN` | (optional) shared gate-header secret if the webhook is hardened — see below |
 | `SMARTSHEET_GATE_HEADER` | gate header name (default `X-Gate-Token`) |
