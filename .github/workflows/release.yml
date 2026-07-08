@@ -44,8 +44,10 @@ jobs:
           tag="${GITHUB_REF_NAME}"
           version="${tag#v}"
           for p in ${{ steps.plugins.outputs.list }}; do
-            mcpb_name="${p}-cowork-${tag}.mcpb"
-            plugin_name="${p}-pat-${tag}.plugin"
+            # Name each bundle by the CLIENT it installs into, matching its extension:
+            #   .plugin -> Claude Cowork ;  .mcpb -> Claude Desktop
+            plugin_name="${p}-cowork-${tag}.plugin"
+            mcpb_name="${p}-desktop-${tag}.mcpb"
             tar_name="${p}-${tag}-source.tar.gz"
 
             # .mcpb (Claude Desktop) — flat zip of plugin dir contents, manifest.json at root
