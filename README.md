@@ -7,12 +7,16 @@ A small suite of MCP plugins for Claude Cowork and Claude Desktop, built by [Tim
 | Plugin | Version | What it does |
 |---|---|---|
 | [program-assistant](plugins/program-assistant/) | 1.0.0 | Grounded, cited answers about the Cornell Systems Engineering program — courses, faculty, forms, deadlines — via a Cornell-hosted RAG service. |
-| [smartsheet](plugins/smartsheet/) | 1.0.0 | Smartsheet lookups scoped to **your own** personal access token, via a Cornell-hosted n8n webhook (per-user identity — no shared token or service account). Read tools today; read/write toggle coming. |
+| [smartsheet](plugins/smartsheet/) | 1.1.0 | Smartsheet lookups scoped to **your own** personal access token, via a Cornell-hosted n8n webhook (per-user identity — no shared token or service account). Read tools always on; add/update/delete rows behind an opt-in read/write toggle. |
 | [canvas-faculty](plugins/canvas-faculty/) | 1.0.0 | Ask about your *own* Cornell Canvas courses and students — per-faculty, FERPA-scoped to your Canvas token via a Cornell-hosted n8n agent. |
 
 More planned: Box (file access). Outlook (mail + calendar) is available as the built-in Cowork Microsoft 365 connector rather than a plugin here.
 
 ## Installation (for non-coders)
+
+**New to the suite?** Two friendly guides:
+- [docs/USE_CASES.md](docs/USE_CASES.md) — what each assistant does, in plain language, with example prompts.
+- [docs/INSTALL_CHECKLIST.md](docs/INSTALL_CHECKLIST.md) — a checklist you can **paste into a Claude chat** and have Claude walk you through setup step-by-step.
 
 The short version:
 
