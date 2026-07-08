@@ -12,6 +12,19 @@ A small suite of MCP plugins for Claude Cowork and Claude Desktop, built by [Tim
 
 More planned: Box (file access). Outlook (mail + calendar) is available as the built-in Cowork Microsoft 365 connector rather than a plugin here.
 
+## ⬇️ Download the plugins
+
+> The installable files are **release assets**, not files in this repository's folders. Get them from the **[latest release ➜](../../releases/latest)**. Pick the file for your app:
+> **`.plugin` = Claude Cowork · `.mcpb` = Claude Desktop.**
+
+| Plugin | Claude Cowork (`.plugin`) | Claude Desktop (`.mcpb`) |
+|---|---|---|
+| program-assistant | [download](../../releases/latest) | [download](../../releases/latest) |
+| smartsheet | [download](../../releases/latest) | [download](../../releases/latest) |
+| canvas-faculty | [download](../../releases/latest) | [download](../../releases/latest) |
+
+(The `plugins/` folders above hold **source code**; you don't install from those.)
+
 ## Installation (for non-coders)
 
 **New to the suite?** Two friendly guides:
@@ -22,8 +35,8 @@ The short version:
 
 1. Make sure you have Claude Cowork (or Claude Desktop) installed.
 2. Go to the [Releases page](../../releases/latest) and download the file for the plugin you want:
-   - `*-plugin` files for Claude Cowork
-   - `*.mcpb` files for Claude Desktop
+   - `*-cowork-*.plugin` files for Claude Cowork
+   - `*-desktop-*.mcpb` files for Claude Desktop
 3. Double-click the downloaded file. Claude will open an install dialog asking for any API tokens the plugin needs.
 4. Paste your API token, click Install.
 5. In a Cowork or Desktop chat, ask Claude to do something with the service — e.g. "Use Smartsheet to list my sheets."
