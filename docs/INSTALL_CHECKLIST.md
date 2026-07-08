@@ -22,9 +22,27 @@
 
 ---
 
-## Where do tokens actually go? (there is no config file)
+## Where do tokens actually go? (a UI field — never a file)
 
-Every plugin below opens a small **install dialog** — a native window from Claude — the moment its file is opened. That dialog has labeled text boxes; you type the token directly into one, click Install, and Claude stores it in your OS's encrypted credential store (Windows Credential Manager / macOS Keychain). **There is no `.env`, no JSON, no file to hand-edit** — if you're hunting for one, stop; it's always this popup. This document gives the **exact box labels** per plugin, taken from each plugin's manifest.
+Your token is typed into a small **config panel that Claude's own app shows you** — **not** into a `.env`, a JSON file, or anything you edit by hand. The app saves what you type into your OS's encrypted credential store (Windows Credential Manager / macOS Keychain) and passes it to the plugin at runtime. There is no file to paste it into, and pasting it into one wouldn't work. If you're hunting for a config file — stop; it's always this panel.
+
+**You reach that panel two ways:**
+
+**(A) Right after you install** *(easiest)* — opening/installing the `.plugin` (Cowork) or `.mcpb` (Desktop) file pops the config panel up on its own, fields ready. Paste your token, click **Install / Save**. Done.
+
+**(B) Any time later, to add or change a token:**
+- **Claude Desktop:** **Settings → Extensions**, find the extension by its name (see table), **click it** to open its config panel.
+- **Claude Cowork:** open the plugin from your installed-plugins list and click its **Configure / Settings** (Settings → the plugin → Configure).
+
+Either way you see the same labeled fields (they're defined by the plugin's manifest). The **token field is masked like a password** (shows dots) — that's the one marked *sensitive*. Paste your token there and **Save / Apply**. The `…webhook URL` field is pre-filled — leave it as-is unless told otherwise.
+
+| Plugin | Find it in the Extensions/Plugins list as | Paste your token(s) into the field(s) labeled |
+|---|---|---|
+| **program-assistant** | **SysEng Program Assistant** | **Webhook token (X-RAG-Token)** |
+| **smartsheet** | **Smartsheet (your account)** | **Your Smartsheet Personal Access Token** |
+| **canvas-faculty** | **SysEng Canvas Faculty Assistant** | **Your Canvas API token (X-Canvas-Token)** *and* **Gate key (X-Gate-Key)** |
+
+> **Not seeing the plugin in the list at all** (vs. seeing it but missing the field)? On Desktop that usually means it installed as a Cowork-style plugin rather than a full `.mcpb` Extension — check the Cowork plugins list instead, or email Tim.
 
 ---
 
@@ -56,7 +74,7 @@ Before anything, determine which of these you are, because it decides what you c
 4. **Confirm before launching anything.** Installing runs a downloaded bundle — treat it like any executable. **Present the file path, its verified SHA-256, and the release URL, and ask the user to confirm before you launch it.** Only after they say yes:
    - **(A) local:** launch it as a double-click would — Windows: `Start-Process "<path>"`; macOS: `open "<path>"`.
    - **(B) sandbox:** you can't launch on their machine — give them the one-line command to run themselves, or tell them to double-click the file they downloaded.
-5. **Hand off for token entry.** Tell the user which dialog opened and which box(es) to fill — quote the **exact labels** from the per-plugin section below (the user is reading the literal UI; don't paraphrase). Wait for them to click Install.
+5. **Hand off for token entry.** The config panel appears on its own right after install (path A in "Where do tokens actually go?"). Tell the user, in the panel for **<the plugin's display name>**, which field to paste into — quote the **exact masked-field label** from the per-plugin section (they're reading the literal UI; don't paraphrase), and remind them the URL field is pre-filled. If the panel didn't pop up, point them at path B (Desktop: Settings → Extensions → the extension; Cowork: the plugin → Configure). Wait for them to Save/Install.
 6. **Prove it worked.** After they confirm (and restart Claude if the client needs it), call the plugin's own tool (`ask_program`, `smartsheet_whoami`, etc.) right here and show the real result. Never declare success without a live check.
 7. **On any failure** (no matching asset, hash mismatch, tool errors) — stop and report the exact error; don't guess a workaround. A hash mismatch means **do not install** — re-download once, and if it still mismatches, stop and email Tim.
 
@@ -83,11 +101,11 @@ No Smartsheet or Canvas account? **Skip that section** — everything else still
 
 **1B–1D (Claude, per Step 0).** Find the `program-assistant` asset for this client, verify its checksum (show the hashes), confirm with you, and open the install dialog.
 
-**1E (you — the popup).** Two boxes:
+**1E (you — in the config panel for "SysEng Program Assistant").** Two fields (see "Where do tokens actually go?" for how to open the panel if it didn't pop up):
 - **"RAG webhook URL"** — leave as pre-filled (if blank, use the program-assistant webhook URL from Reference values).
-- **"Webhook token (X-RAG-Token)"** — paste the token from 1A.
+- **"Webhook token (X-RAG-Token)"** — the masked field; paste the token from 1A here.
 
-Click **Install**.
+Click **Install / Save**.
 
 **1F (Claude proves it).** Call `ask_program` with *"Who is the director of the Systems Engineering program?"* and show the cited answer.
 
@@ -113,12 +131,12 @@ Click **Install**.
 
 **3B–3D (Claude, per Step 0).** Find the `smartsheet` asset, verify checksum, confirm, open the dialog.
 
-**3E (you — the popup).** Three boxes:
+**3E (you — in the config panel for "Smartsheet (your account)").** Three fields:
 - **"Smartsheet webhook URL"** — leave as pre-filled.
-- **"Your Smartsheet Personal Access Token"** — paste the token from 3A.
-- **"Allow write actions (add/update/delete rows)"** — leave **OFF** unless you want Claude editing rows for you.
+- **"Your Smartsheet Personal Access Token"** — the masked field; paste the token from 3A here.
+- **"Allow write actions (add/update/delete rows)"** — a checkbox/toggle; leave **OFF** unless you want Claude editing rows for you.
 
-Click **Install**.
+Click **Install / Save**.
 
 **3F (Claude proves it).** Call `smartsheet_whoami` — should be **your** name and Cornell email (confirming it's scoped to you).
 
@@ -131,12 +149,12 @@ Click **Install**.
 
 **4C–4E (Claude, per Step 0).** Find the `canvas-faculty` asset, verify checksum, confirm, open the dialog.
 
-**4F (you — the popup).** Three boxes:
+**4F (you — in the config panel for "SysEng Canvas Faculty Assistant").** Three fields:
 - **"Canvas faculty webhook URL"** — leave as pre-filled.
-- **"Your Canvas API token (X-Canvas-Token)"** — paste the token from 4B.
-- **"Gate key (X-Gate-Key)"** — paste the key from 4A.
+- **"Your Canvas API token (X-Canvas-Token)"** — the masked field; paste the token from 4B here.
+- **"Gate key (X-Gate-Key)"** — the second masked field; paste the key from 4A here.
 
-Click **Install**.
+Click **Install / Save**.
 
 **4G (Claude proves it).** Call `ask_canvas` with *"Which courses do I teach?"* and show the result.
 
