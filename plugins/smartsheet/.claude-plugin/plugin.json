@@ -1,6 +1,6 @@
 {
   "name": "smartsheet",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Query your own Smartsheet account from Claude — scoped to your personal access token via a Cornell-hosted n8n webhook. Per-user identity, no shared service account.",
   "author": { "name": "Timothy Fraser" }
 }

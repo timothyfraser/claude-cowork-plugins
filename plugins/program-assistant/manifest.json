@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "program-assistant",
   "display_name": "SysEng Program Assistant",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Ask the Cornell Systems Engineering program assistant. Grounded, cited answers from the program's course roster, faculty directory, website, and official forms — powered by a Cornell-hosted n8n RAG workflow. Supports /name skills.",
-  "long_description": "A thin Cowork/MCP front-end over the program's Retrieval-Augmented-Generation engine. The single tool `ask_program` sends a question to a header-authed n8n webhook on Cornell infrastructure, which runs hybrid retrieval over the curated program knowledge base and answers with inline [n] citations (declining when the answer isn't in the sources). No corpus or model API keys live in this plugin — only the webhook URL and a shared token, stored in the OS keychain. Supports named skills via `/skill-name` (e.g. `/who-to-contact`, `/course-planning`, `/forms-and-deadlines`).",
+  "long_description": "A thin Cowork/MCP front-end over the program's Retrieval-Augmented-Generation engine. The single tool `ask_program` sends a question to a header-authed n8n webhook on Cornell infrastructure, which runs hybrid retrieval over the curated program knowledge base and answers with inline [n] citations (declining when the answer isn't in the sources). No corpus or model API keys live in this plugin — only the webhook URL and a shared token. TWO ways to supply the token: this settings menu, OR a plain text file (~/.systemsbot/tokens.env) you edit by hand — no menus needed, see ONBOARDING.md. Supports named skills via `/skill-name` (e.g. `/who-to-contact`, `/course-planning`, `/forms-and-deadlines`).",
   "author": { "name": "Timothy Fraser" },
   "icon": "icon.png",
   "server": {
@@ -24,14 +24,15 @@
       "type": "string",
       "title": "RAG webhook URL",
       "description": "The n8n webhook that runs the program RAG, e.g. https://n8n-dev.lcmain.aaii.cucloud.net/webhook/rag-ask",
-      "required": true
+      "default": "https://n8n-dev.lcmain.aaii.cucloud.net/webhook/rag-ask",
+      "required": false
     },
     "rag_webhook_token": {
       "type": "string",
       "title": "Webhook token (X-RAG-Token)",
-      "description": "Shared secret the webhook requires in the X-RAG-Token header. Get it from the program administrator.",
+      "description": "Shared secret the webhook requires in the X-RAG-Token header. Get it from the program administrator. OPTIONAL here: you can instead paste it into a plain text file (~/.systemsbot/tokens.env) — see ONBOARDING.md. Leave this blank if you're using the file.",
       "sensitive": true,
-      "required": true
+      "required": false
     }
   },
   "tools": [

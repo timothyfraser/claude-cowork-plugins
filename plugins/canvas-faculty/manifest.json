@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "canvas-faculty",
   "display_name": "SysEng Canvas Faculty Assistant",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Ask about YOUR OWN Cornell Canvas courses and students. Per-faculty, FERPA-scoped: every Canvas call is scoped to your personal Canvas token, so you only ever see your own courses. Powered by a Cornell-hosted n8n agent + the Cornell LiteLLM gateway.",
-  "long_description": "A thin Cowork/MCP front-end over the program's 'Canvas: Faculty Agent' n8n webhook. The single tool `ask_canvas` sends your question to the webhook, forwarding your OWN Canvas API token as the X-Canvas-Token header (per-user scoping — under FERPA, one faculty member must never see another's student data) plus a shared cohort gate key as the X-Gate-Key header (the webhook validates this and returns 403 if it is missing or wrong). The agent runs read-only Canvas tools (list courses, list/search students, overlap, grade trajectory, assignment analytics) entirely on Cornell infrastructure. No Canvas data or LLM keys leave Cornell infra; your token and the gate key live ONLY in this plugin's local config (OS keychain).",
+  "long_description": "A thin Cowork/MCP front-end over the program's 'Canvas: Faculty Agent' n8n webhook. The single tool `ask_canvas` sends your question to the webhook, forwarding your OWN Canvas API token as the X-Canvas-Token header (per-user scoping — under FERPA, one faculty member must never see another's student data) plus a shared cohort gate key as the X-Gate-Key header (the webhook validates this and returns 403 if it is missing or wrong). TWO ways to supply both secrets: this settings menu, OR a plain text file (~/.systemsbot/tokens.env) you edit by hand — no menus needed, see ONBOARDING.md. The agent runs read-only Canvas tools (list courses, list/search students, overlap, grade trajectory, assignment analytics) entirely on Cornell infrastructure. No Canvas data or LLM keys leave Cornell infra.",
   "author": { "name": "Timothy Fraser" },
   "icon": "icon.png",
   "server": {
@@ -25,21 +25,22 @@
       "type": "string",
       "title": "Canvas faculty webhook URL",
       "description": "The n8n webhook for the Canvas faculty agent, e.g. https://n8n-dev.lcmain.aaii.cucloud.net/webhook/canvas-faculty",
-      "required": true
+      "default": "https://n8n-dev.lcmain.aaii.cucloud.net/webhook/canvas-faculty",
+      "required": false
     },
     "canvas_api_token": {
       "type": "string",
       "title": "Your Canvas API token (X-Canvas-Token)",
-      "description": "YOUR OWN Canvas API access token. Generate it in Canvas: Account -> Settings -> Approved Integrations -> New Access Token. This stays on your machine and scopes every query to your courses only. See the onboarding guide.",
+      "description": "YOUR OWN Canvas API access token. Generate it in Canvas: Account -> Settings -> Approved Integrations -> New Access Token. OPTIONAL here: you can instead paste it into a plain text file (~/.systemsbot/tokens.env) — see ONBOARDING.md. Leave this blank if you're using the file.",
       "sensitive": true,
-      "required": true
+      "required": false
     },
     "canvas_gate_key": {
       "type": "string",
       "title": "Gate key (X-Gate-Key)",
-      "description": "Shared cohort gate secret the webhook requires before doing any work. Get it from the program administrator. Stored locally only.",
+      "description": "Shared cohort gate secret the webhook requires before doing any work. Get it from the program administrator. OPTIONAL here: you can instead paste it into a plain text file (~/.systemsbot/tokens.env) — see ONBOARDING.md. Leave this blank if you're using the file.",
       "sensitive": true,
-      "required": true
+      "required": false
     }
   },
   "tools": [

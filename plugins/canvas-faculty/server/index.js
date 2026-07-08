@@ -15,8 +15,13 @@
  * never centralized and never committed. The agent + all Canvas REST calls run on
  * Cornell-hosted infra (n8n + the Cornell LiteLLM gateway), which is FERPA-appropriate.
  *
- * Config (user_config -> env):
+ * Config — TWO ways to supply these, in priority order (both work; see token-loader.js):
+ *   1. the plugin's own settings menu (user_config -> env, names below)
+ *   2. a plain text file the user edits by hand, e.g. ~/.systemsbot/tokens.env, containing
+ *      lines CANVAS_API_TOKEN=<your token> and CANVAS_GATE_KEY=<the gate key from Tim> —
+ *      no menus, no admin rights. Auto-created with a commented template on first run.
  *   CANVAS_WEBHOOK_URL  e.g. https://n8n-dev.lcmain.aaii.cucloud.net/webhook/canvas-faculty
+ *                       (has a built-in default below since it's not a secret)
  *   CANVAS_API_TOKEN    the faculty member's own Canvas token (sent as X-Canvas-Token)
  *   CANVAS_GATE_KEY     the shared cohort gate secret (sent as X-Gate-Key)
  */
@@ -27,26 +32,14 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { resolveSecret, ensureTemplate, missingTokenMessage } from "./token-loader.js";
 
-const WEBHOOK_URL = process.env.CANVAS_WEBHOOK_URL;
-const CANVAS_TOKEN = process.env.CANVAS_API_TOKEN;
-const GATE_KEY = process.env.CANVAS_GATE_KEY;
+const DEFAULT_WEBHOOK_URL = "https://n8n-dev.lcmain.aaii.cucloud.net/webhook/canvas-faculty";
 const CANVAS_TOKEN_HEADER = process.env.CANVAS_TOKEN_HEADER || "X-Canvas-Token";
 const GATE_KEY_HEADER = process.env.CANVAS_GATE_HEADER || "X-Gate-Key";
 const TIMEOUT_MS = Number(process.env.CANVAS_TIMEOUT_MS || 90000);
 
-if (!WEBHOOK_URL) {
-  console.error("CANVAS_WEBHOOK_URL is not set. Configure it in the plugin settings.");
-  process.exit(1);
-}
-if (!CANVAS_TOKEN) {
-  console.error("CANVAS_API_TOKEN is not set. Paste your own Canvas API token in the plugin settings.");
-  process.exit(1);
-}
-if (!GATE_KEY) {
-  console.error("CANVAS_GATE_KEY is not set. Paste the gate key from the program administrator in the plugin settings.");
-  process.exit(1);
-}
+ensureTemplate();
 
 const ok = (payload) => ({
   content: [{ type: "text", text: typeof payload === "string" ? payload : JSON.stringify(payload, null, 2) }],
@@ -69,15 +62,24 @@ const tools = {
       },
     },
     handler: async ({ question }) => {
+      const webhookUrl = resolveSecret("CANVAS_WEBHOOK_URL") || DEFAULT_WEBHOOK_URL;
+      const canvasToken = resolveSecret("CANVAS_API_TOKEN");
+      const gateKey = resolveSecret("CANVAS_GATE_KEY");
+      if (!canvasToken) {
+        return { content: [{ type: "text", text: missingTokenMessage("CANVAS_API_TOKEN", "your Canvas API token") }], isError: true };
+      }
+      if (!gateKey) {
+        return { content: [{ type: "text", text: missingTokenMessage("CANVAS_GATE_KEY", "the Canvas gate key from Tim") }], isError: true };
+      }
       const ac = new AbortController();
       const t = setTimeout(() => ac.abort(), TIMEOUT_MS);
       try {
-        const res = await fetch(WEBHOOK_URL, {
+        const res = await fetch(webhookUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            [CANVAS_TOKEN_HEADER]: CANVAS_TOKEN,
-            [GATE_KEY_HEADER]: GATE_KEY,
+            [CANVAS_TOKEN_HEADER]: canvasToken,
+            [GATE_KEY_HEADER]: gateKey,
           },
           body: JSON.stringify({ question }),
           signal: ac.signal,
@@ -85,12 +87,12 @@ const tools = {
         const text = await res.text();
         if (res.status === 403) {
           throw new Error(
-            "Gate rejected (403). Your X-Gate-Key is missing or wrong — re-check the gate key in the plugin settings (get it from the program administrator)."
+            "Gate rejected (403). Your gate key is missing or wrong — re-check CANVAS_GATE_KEY in the plugin settings or your token file (get the current value from the program administrator)."
           );
         }
         if (res.status === 401) {
           throw new Error(
-            "Unauthorized (401). Your Canvas token was missing or rejected — re-check your Canvas API token in the plugin settings."
+            "Unauthorized (401). Your Canvas token was missing or rejected — re-check CANVAS_API_TOKEN in the plugin settings or your token file."
           );
         }
         if (!res.ok) {
@@ -107,7 +109,7 @@ const tools = {
 };
 
 const server = new Server(
-  { name: "canvas-faculty", version: "1.0.0" },
+  { name: "canvas-faculty", version: "1.2.0" },
   { capabilities: { tools: {} } }
 );
 

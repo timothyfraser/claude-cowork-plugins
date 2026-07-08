@@ -8,8 +8,13 @@
  * LiteLLM gateway) and returns a grounded, cited answer. No corpus or model keys
  * live in this plugin — only the webhook URL + a shared token (OS keychain).
  *
- * Config (user_config -> env):
- *   RAG_WEBHOOK_URL   e.g. https://n8n-dev.lcmain.aaii.cucloud.net/webhook/rag-ask
+ * Config — TWO ways to supply these, in priority order (both work; see token-loader.js):
+ *   1. the plugin's own settings menu (user_config -> env RAG_WEBHOOK_URL / RAG_WEBHOOK_TOKEN)
+ *   2. a plain text file the user edits by hand, e.g. ~/.systemsbot/tokens.env, containing a
+ *      line RAG_WEBHOOK_TOKEN=<your token> — no menus, no admin rights. Auto-created with a
+ *      commented template on first run if no such file exists yet.
+ *   RAG_WEBHOOK_URL   e.g. https://n8n-dev.lcmain.aaii.cucloud.net/webhook/rag-ask (has a
+ *                     built-in default below since it's not a secret)
  *   RAG_WEBHOOK_TOKEN the X-RAG-Token shared secret
  */
 
@@ -19,16 +24,14 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { resolveSecret, ensureTemplate, missingTokenMessage } from "./token-loader.js";
 
-const WEBHOOK_URL = process.env.RAG_WEBHOOK_URL;
-const WEBHOOK_TOKEN = process.env.RAG_WEBHOOK_TOKEN;
+const DEFAULT_WEBHOOK_URL = "https://n8n-dev.lcmain.aaii.cucloud.net/webhook/rag-ask";
 const TOKEN_HEADER = process.env.RAG_WEBHOOK_TOKEN_HEADER || "X-RAG-Token";
 const TIMEOUT_MS = Number(process.env.RAG_TIMEOUT_MS || 60000);
 
-if (!WEBHOOK_URL) {
-  console.error("RAG_WEBHOOK_URL is not set. Configure it in the plugin settings.");
-  process.exit(1);
-}
+// Auto-create the shared token-file template (fail-soft; never overwrites an existing file).
+ensureTemplate();
 
 const ok = (payload) => ({ content: [{ type: "text", text: typeof payload === "string" ? payload : JSON.stringify(payload, null, 2) }] });
 
@@ -46,14 +49,19 @@ const tools = {
       },
     },
     handler: async ({ question }) => {
+      const webhookUrl = resolveSecret("RAG_WEBHOOK_URL") || DEFAULT_WEBHOOK_URL;
+      const webhookToken = resolveSecret("RAG_WEBHOOK_TOKEN");
+      if (!webhookToken) {
+        return { content: [{ type: "text", text: missingTokenMessage("RAG_WEBHOOK_TOKEN", "program-assistant webhook token") }], isError: true };
+      }
       const ac = new AbortController();
       const t = setTimeout(() => ac.abort(), TIMEOUT_MS);
       try {
-        const res = await fetch(WEBHOOK_URL, {
+        const res = await fetch(webhookUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(WEBHOOK_TOKEN ? { [TOKEN_HEADER]: WEBHOOK_TOKEN } : {}),
+            [TOKEN_HEADER]: webhookToken,
           },
           body: JSON.stringify({ query: question }),
           signal: ac.signal,
@@ -71,7 +79,7 @@ const tools = {
 };
 
 const server = new Server(
-  { name: "program-assistant", version: "1.0.0" },
+  { name: "program-assistant", version: "1.2.0" },
   { capabilities: { tools: {} } }
 );
 

@@ -22,27 +22,44 @@
 
 ---
 
-## Where do tokens actually go? (a UI field — never a file)
+## Where do tokens actually go? (one text file — recommended)
 
-Your token is typed into a small **config panel that Claude's own app shows you** — **not** into a `.env`, a JSON file, or anything you edit by hand. The app saves what you type into your OS's encrypted credential store (Windows Credential Manager / macOS Keychain) and passes it to the plugin at runtime. There is no file to paste it into, and pasting it into one wouldn't work. If you're hunting for a config file — stop; it's always this panel.
+**Recommended: edit one plain text file.** After you install any of the three plugins once, it
+automatically creates this file on your computer with a blank line ready for every token you might need:
 
-**You reach that panel two ways:**
+- **Windows:** `C:\Users\<you>\.systemsbot\tokens.env`
+- **Mac:** `~/.systemsbot/tokens.env`
 
-**(A) Right after you install** *(easiest)* — opening/installing the `.plugin` (Cowork) or `.mcpb` (Desktop) file pops the config panel up on its own, fields ready. Paste your token, click **Install / Save**. Done.
+Open it in Notepad (or any text editor), paste each token right after its `=` sign (no spaces, no
+quotes), save, then **fully quit and reopen Claude**. That's it — one file, no settings menus,
+works no matter which Claude app you have or which tabs your organization has enabled/disabled.
 
-**(B) Any time later, to add or change a token:**
-- **Claude Desktop:** **Settings → Extensions**, find the extension by its name (see table), **click it** to open its config panel.
-- **Claude Cowork:** open the plugin from your installed-plugins list and click its **Configure / Settings** (Settings → the plugin → Configure).
+```
+RAG_WEBHOOK_TOKEN=paste-your-program-assistant-token-here
+SMARTSHEET_USER_PAT=paste-your-smartsheet-token-here
+CANVAS_API_TOKEN=paste-your-canvas-token-here
+CANVAS_GATE_KEY=paste-the-canvas-gate-key-here
+```
 
-Either way you see the same labeled fields (they're defined by the plugin's manifest). The **token field is masked like a password** (shows dots) — that's the one marked *sensitive*. Paste your token there and **Save / Apply**. The `…webhook URL` field is pre-filled — leave it as-is unless told otherwise.
+Only fill in the lines for the plugins you're actually using — leave the rest blank. The file
+never leaves your computer, is never sent anywhere but read locally by the plugin, and is never
+committed to git or shared. Treat it like a password file.
 
-| Plugin | Find it in the Extensions/Plugins list as | Paste your token(s) into the field(s) labeled |
+**Alternative: the app's own config panel**, if you have access to it and prefer it. Some plugin
+installs pop up a settings panel with labeled boxes (defined by the plugin's manifest); paste your
+token into the box marked *sensitive* (shown masked, like a password field) and Save. This reaches
+the same setting as the file — use whichever you can get to. If your organization has the
+Extensions/Connectors tabs disabled or limited, the file always works regardless.
+
+| Plugin | Token file line(s) to fill in | Config-panel field label (if you use that instead) |
 |---|---|---|
-| **program-assistant** | **SysEng Program Assistant** | **Webhook token (X-RAG-Token)** |
-| **smartsheet** | **Smartsheet (your account)** | **Your Smartsheet Personal Access Token** |
-| **canvas-faculty** | **SysEng Canvas Faculty Assistant** | **Your Canvas API token (X-Canvas-Token)** *and* **Gate key (X-Gate-Key)** |
+| **program-assistant** | `RAG_WEBHOOK_TOKEN=` | **Webhook token (X-RAG-Token)** |
+| **smartsheet** | `SMARTSHEET_USER_PAT=` | **Your Smartsheet Personal Access Token** |
+| **canvas-faculty** | `CANVAS_API_TOKEN=` and `CANVAS_GATE_KEY=` | **Your Canvas API token (X-Canvas-Token)** and **Gate key (X-Gate-Key)** |
 
-> **Not seeing the plugin in the list at all** (vs. seeing it but missing the field)? On Desktop that usually means it installed as a Cowork-style plugin rather than a full `.mcpb` Extension — check the Cowork plugins list instead, or email Tim.
+> **Don't see the token file yet?** It's created the first time you open/run the plugin. If it's
+> still missing, just create the folder and file yourself at the path above with the four lines
+> shown, or ask Claude to run `ask_program` (or any tool) once — the plugin creates it on startup.
 
 ---
 
@@ -74,7 +91,7 @@ Before anything, determine which of these you are, because it decides what you c
 4. **Confirm before launching anything.** Installing runs a downloaded bundle — treat it like any executable. **Present the file path, its verified SHA-256, and the release URL, and ask the user to confirm before you launch it.** Only after they say yes:
    - **(A) local:** launch it as a double-click would — Windows: `Start-Process "<path>"`; macOS: `open "<path>"`.
    - **(B) sandbox:** you can't launch on their machine — give them the one-line command to run themselves, or tell them to double-click the file they downloaded.
-5. **Hand off for token entry.** The config panel appears on its own right after install (path A in "Where do tokens actually go?"). Tell the user, in the panel for **<the plugin's display name>**, which field to paste into — quote the **exact masked-field label** from the per-plugin section (they're reading the literal UI; don't paraphrase), and remind them the URL field is pre-filled. If the panel didn't pop up, point them at path B (Desktop: Settings → Extensions → the extension; Cowork: the plugin → Configure). Wait for them to Save/Install.
+5. **Hand off for token entry.** This step works the same whether you're (A) or (B) — the user edits a file on their own computer either way, nothing depends on your own execution context. Tell them plainly: open `~/.systemsbot/tokens.env` (Windows: `C:\Users\<them>\.systemsbot\tokens.env`), paste the token after the matching `KEY=` line (see the table in "Where do tokens actually go?"), save, then fully quit and reopen Claude. If they'd rather use the app's own config panel instead, that's fine too — same effect.
 6. **Prove it worked.** After they confirm (and restart Claude if the client needs it), call the plugin's own tool (`ask_program`, `smartsheet_whoami`, etc.) right here and show the real result. Never declare success without a live check.
 7. **On any failure** (no matching asset, hash mismatch, tool errors) — stop and report the exact error; don't guess a workaround. A hash mismatch means **do not install** — re-download once, and if it still mismatches, stop and email Tim.
 
@@ -101,11 +118,11 @@ No Smartsheet or Canvas account? **Skip that section** — everything else still
 
 **1B–1D (Claude, per Step 0).** Find the `program-assistant` asset for this client, verify its checksum (show the hashes), confirm with you, and open the install dialog.
 
-**1E (you — in the config panel for "SysEng Program Assistant").** Two fields (see "Where do tokens actually go?" for how to open the panel if it didn't pop up):
-- **"RAG webhook URL"** — leave as pre-filled (if blank, use the program-assistant webhook URL from Reference values).
-- **"Webhook token (X-RAG-Token)"** — the masked field; paste the token from 1A here.
-
-Click **Install / Save**.
+**1E (you — one file, see "Where do tokens actually go?").** Open `~/.systemsbot/tokens.env`
+(Windows: `C:\Users\<you>\.systemsbot\tokens.env`), find the line `RAG_WEBHOOK_TOKEN=`, paste the
+token from 1A right after the `=`, save, then fully quit and reopen Claude. (Prefer the app's own
+config panel instead? Field labels: **"RAG webhook URL"** pre-filled, **"Webhook token
+(X-RAG-Token)"** = the token from 1A.)
 
 **1F (Claude proves it).** Call `ask_program` with *"Who is the director of the Systems Engineering program?"* and show the cited answer.
 
@@ -131,12 +148,11 @@ Click **Install / Save**.
 
 **3B–3D (Claude, per Step 0).** Find the `smartsheet` asset, verify checksum, confirm, open the dialog.
 
-**3E (you — in the config panel for "Smartsheet (your account)").** Three fields:
-- **"Smartsheet webhook URL"** — leave as pre-filled.
-- **"Your Smartsheet Personal Access Token"** — the masked field; paste the token from 3A here.
-- **"Allow write actions (add/update/delete rows)"** — a checkbox/toggle; leave **OFF** unless you want Claude editing rows for you.
-
-Click **Install / Save**.
+**3E (you — one file, see "Where do tokens actually go?").** Open `~/.systemsbot/tokens.env`,
+find `SMARTSHEET_USER_PAT=`, paste the token from 3A after the `=`, save, then fully quit and
+reopen Claude. (Prefer the config panel instead? Fields: **"Smartsheet webhook URL"** pre-filled,
+**"Your Smartsheet Personal Access Token"** = the token from 3A, **"Allow write actions
+(add/update/delete rows)"** — leave **OFF** unless you want Claude editing rows for you.)
 
 **3F (Claude proves it).** Call `smartsheet_whoami` — should be **your** name and Cornell email (confirming it's scoped to you).
 
@@ -149,12 +165,11 @@ Click **Install / Save**.
 
 **4C–4E (Claude, per Step 0).** Find the `canvas-faculty` asset, verify checksum, confirm, open the dialog.
 
-**4F (you — in the config panel for "SysEng Canvas Faculty Assistant").** Three fields:
-- **"Canvas faculty webhook URL"** — leave as pre-filled.
-- **"Your Canvas API token (X-Canvas-Token)"** — the masked field; paste the token from 4B here.
-- **"Gate key (X-Gate-Key)"** — the second masked field; paste the key from 4A here.
-
-Click **Install / Save**.
+**4F (you — one file, see "Where do tokens actually go?").** Open `~/.systemsbot/tokens.env`,
+find `CANVAS_API_TOKEN=` and `CANVAS_GATE_KEY=`, paste the Step 4B token and the Step 4A gate key
+after each `=`, save, then fully quit and reopen Claude. (Prefer the config panel instead? Fields:
+**"Canvas faculty webhook URL"** pre-filled, **"Your Canvas API token (X-Canvas-Token)"** = 4B,
+**"Gate key (X-Gate-Key)"** = 4A.)
 
 **4G (Claude proves it).** Call `ask_canvas` with *"Which courses do I teach?"* and show the result.
 
@@ -175,13 +190,14 @@ Click **Install / Save**.
 | Latest-release API shows no matching asset for your client | Check you're matching `-cowork-….plugin` (Cowork) vs `-desktop-….mcpb` (Desktop). If truly absent, email Tim — don't substitute a random file. |
 | Checksum (computed vs expected) doesn't match | **Do not install.** Re-download once; if it still mismatches, stop and tell Tim. |
 | Double-click / `Start-Process` / `open` does nothing | Open Claude first, then **Settings → Extensions / Plugins → Install** and pick the file. |
-| Program assistant: "webhook 403/401" | Token mistyped in the dialog — reopen plugin settings, re-paste (no stray spaces). |
+| Program assistant: "webhook 403/401" or "no ... token is set up" | Token missing/mistyped — open `~/.systemsbot/tokens.env`, check the right line has your token with no stray spaces/quotes, save, fully quit and reopen Claude. |
 | Outlook: "Failed to refresh token" after a password change | Ask Claude to run **o365_logout**, then log in again. |
 | Outlook: browser never opens for sign-in | Try off VPN; some proxies block the login redirect. |
-| Smartsheet/Canvas: wrong person, or token error | Generate a fresh token, re-paste it in the plugin's settings dialog (not a file). |
+| Smartsheet/Canvas: wrong person, or token error | Generate a fresh token, re-paste it in `~/.systemsbot/tokens.env` (or the plugin's settings panel), save, restart Claude. |
+| Can't find `~/.systemsbot/tokens.env` | It's auto-created the first time you use the plugin. Still missing? Create the folder/file yourself, or just ask Claude to try any tool once. |
 | Anything else | Email tmf77@cornell.edu with the exact error and which step you were on. |
 
-**Security posture:** tokens live only in your OS's secure credential store, entered through each plugin's install dialog — never in a file, this chat, or git. Every connector acts as *you and only you*. All AI runs on Cornell infrastructure. Nothing ever sends email on your behalf — the checksum step verifies **integrity** (not corrupted/swapped in transit), and you confirm before any installer launches.
+**Security posture:** tokens live in a plain text file on your own computer (`~/.systemsbot/tokens.env`) or your OS's secure credential store if you use the config panel instead — either way, only on your machine, never in this chat, never in git, never shared. Every connector acts as *you and only you*. All AI runs on Cornell infrastructure. Nothing ever sends email on your behalf — the checksum step (for downloaded plugin files) verifies **integrity** (not corrupted/swapped in transit), and you confirm before any installer launches.
 
 ---
 
