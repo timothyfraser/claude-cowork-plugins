@@ -43,7 +43,12 @@ CANVAS_GATE_KEY=paste-the-canvas-gate-key-here
 
 Only fill in the lines for the plugins you're actually using — leave the rest blank. The file
 never leaves your computer, is never sent anywhere but read locally by the plugin, and is never
-committed to git or shared. Treat it like a password file.
+committed to git or shared. The plugin also marks the folder so git will never track it (a
+`.gitignore` naming the token files by name), and on Mac/Linux locks the file/folder to be
+readable only by your own account. Still, treat it like a password file — don't copy it into a
+shared folder. (On Windows, this relies on the normal per-account privacy of your own profile
+folder — testing showed actively tightening Windows permissions can itself risk breaking access,
+so we deliberately don't do that.)
 
 **Alternative: the app's own config panel**, if you have access to it and prefer it. Some plugin
 installs pop up a settings panel with labeled boxes (defined by the plugin's manifest); paste your
