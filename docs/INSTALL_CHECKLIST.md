@@ -19,6 +19,9 @@
 - **Canvas-faculty webhook URL:** `https://n8n-dev.lcmain.aaii.cucloud.net/webhook/canvas-faculty`
 - **Admin (for tokens/keys):** tmf77@cornell.edu
 - **Release asset naming:** `<plugin>-cowork-<version>.plugin` = **Claude Cowork**; `<plugin>-desktop-<version>.mcpb` = **Claude Desktop**.
+- **Outlook connector download URL:** `<TIM: paste your Box/Teams/SharePoint share link for outlook-connector.plugin here — "anyone with the link, no login" sharing so Claude can fetch it directly>`
+- **Outlook connector SHA256 (build 2026-07-08):** `d438622587b56b9fa6746b55285de648de5dbe67f3c0d623f96b9feefdb15d6d`
+  *(Not on the public GitHub Releases page — it's a fork of a third-party project with no declared upstream license, so it stays on Cornell-internal, link-based distribution rather than a public release.)*
 
 ---
 
@@ -87,12 +90,12 @@ Before anything, determine which of these you are, because it decides what you c
 ### Steps
 
 1. **Detect the client.** Cowork or Desktop? The file differs: `.plugin` = Cowork, `.mcpb` = Desktop. If you can't tell, ask.
-2. **Resolve the download URL** (works from A or B — it's just an API read). Query the latest-release API (see Reference values). In the `assets` array pick the entry whose `name` contains the plugin name **and** matches the client (`-cowork-….plugin` or `-desktop-….mcpb`); use its `browser_download_url`. Also note that the release is on the official repo `timothyfraser/claude-cowork-plugins` (see step 3 on why that matters).
+2. **Resolve the download URL** (works from A or B — it's just an API read). For **program-assistant/smartsheet/canvas-faculty**: query the latest-release API (see Reference values); in the `assets` array pick the entry whose `name` contains the plugin name **and** matches the client (`-cowork-….plugin` or `-desktop-….mcpb`); use its `browser_download_url`. For **Outlook**: there is no release API for it — use the fixed **"Outlook connector download URL"** from Reference values directly (no client-format branching; it's a single `.plugin` file for Cowork).
    - `curl -s https://api.github.com/repos/timothyfraser/claude-cowork-plugins/releases/latest`
    - PowerShell: `Invoke-RestMethod https://api.github.com/repos/timothyfraser/claude-cowork-plugins/releases/latest`
-3. **Download + verify the checksum, and show your work.** Download the asset and the `SHA256SUMS` asset from the same release, compute the file's SHA-256, and **print the computed hash and the expected hash side by side** so the user (and you) can see they match — don't just say "verified."
-   - `curl -L -o <name> <browser_download_url>` then `sha256sum <name>` (macOS: `shasum -a 256`; PowerShell: `Get-FileHash <name> -Algorithm SHA256`), and `grep <name> SHA256SUMS`.
-   - **Be honest about what this proves:** matching `SHA256SUMS` (which lives in the *same* release) confirms the file wasn't **corrupted or swapped in transit** — it does *not* prove **authenticity** (whoever controls the release could regenerate matching sums). The real trust anchors here are: you fetched from the official repo above over HTTPS, and the release was built by that repo's GitHub Actions release workflow. If a stronger guarantee ever matters, cross-check the hash against a value Tim gives you out-of-band.
+3. **Download + verify the checksum, and show your work.** For program-assistant/smartsheet/canvas-faculty: also download the `SHA256SUMS` asset from the same release. For Outlook: compare against the fixed **"Outlook connector SHA256"** value in Reference values instead (no `SHA256SUMS` file for this one). Either way, compute the file's SHA-256 and **print the computed hash and the expected hash side by side** so the user (and you) can see they match — don't just say "verified."
+   - `curl -L -o <name> <url>` then `sha256sum <name>` (macOS: `shasum -a 256`; PowerShell: `Get-FileHash <name> -Algorithm SHA256`).
+   - **Be honest about what this proves:** a matching hash confirms the file wasn't **corrupted or swapped in transit** — it does *not* prove **authenticity** (whoever controls the file/release could regenerate matching sums). For the three GitHub-released plugins, the trust anchor is fetching from the official repo over HTTPS with a release built by that repo's own Actions workflow. For Outlook, the trust anchor is that the link and pinned hash both come from this document, sourced directly from Tim. If a stronger guarantee ever matters, cross-check the hash against a value Tim gives you out-of-band.
 4. **Confirm before launching anything.** Installing runs a downloaded bundle — treat it like any executable. **Present the file path, its verified SHA-256, and the release URL, and ask the user to confirm before you launch it.** Only after they say yes:
    - **(A) local:** launch it as a double-click would — Windows: `Start-Process "<path>"`; macOS: `open "<path>"`.
    - **(B) sandbox:** you can't launch on their machine — give them the one-line command to run themselves, or tell them to double-click the file they downloaded.
@@ -107,11 +110,11 @@ Before anything, determine which of these you are, because it decides what you c
 | Connector | Install it if… | Prepare first | Fully automatable? |
 |---|---|---|---|
 | **1. Program Assistant** | you answer questions about the SysEng program | a token from Tim (email — see 1A) | ✅ from Releases |
-| **2. Outlook** | you want Claude to read/search your mail & calendar | **a file from Tim** (not on Releases yet — see note) | ⚠️ needs a side-channel file |
+| **2. Outlook** | you want Claude to read/search your mail & calendar | nothing — just your NetID login | ✅ from a direct link (see Reference values) |
 | **3. Smartsheet** | you use Smartsheet at Cornell | your own Smartsheet token (see 3A) | ✅ from Releases |
 | **4. Canvas (faculty)** | you're faculty asking about your own courses | your own Canvas token + a gate key from Tim | ✅ from Releases |
 
-> **Heads-up on Outlook (#2):** unlike the other three, the Outlook connector is **not on the public Releases page yet**, so Claude can't auto-download it — you'll need Tim to send you the file directly first. If you want a clean "paste the doc and go" run, do connectors 1/3/4 now and handle Outlook separately.
+> **Note on Outlook (#2):** it's downloaded from a direct link rather than the public GitHub Releases page (it's a fork of a third-party project pending a licensing question — internal-only distribution for now), but the download/verify/launch steps below work exactly the same way.
 
 No Smartsheet or Canvas account? **Skip that section** — everything else still works.
 
@@ -135,11 +138,11 @@ config panel instead? Field labels: **"RAG webhook URL"** pre-filled, **"Webhook
 
 ## 2. Outlook (your mail & calendar in Claude)
 
-**Not on Releases yet (2026-07-08).** Ask Tim for the `outlook-connector.plugin` file directly (Teams/Box/email). Once you have it locally, tell Claude the file path; Claude does the confirm-and-launch (Step 0/4) — there's no checksum step since it didn't come from the release.
+**2A–2D (Claude, per Step 0).** Download `outlook-connector.plugin` from the direct link in "Reference values" above (not the GitHub Releases page — see the note in the connector table). Compute its SHA256 and compare against the value in Reference values, printing both side by side — same integrity check as the other three, just against a pinned hash here instead of a live `SHA256SUMS` file. Confirm with you, then launch it (Step 0/4).
 
-**2A (you — sign-in, no token box).** After it installs and Claude restarts, say *"Log into my Outlook."* A browser opens — sign in with **netid@cornell.edu** + Duo, click **Accept**.
+**2E (you — sign-in, no token box).** After it installs and Claude restarts, say *"Log into my Outlook."* A browser opens — sign in with **netid@cornell.edu** + Duo, click **Accept**.
 
-**2B (Claude proves it).** Call `o365_whoami` (should be your name/email), then *"List my 5 most recent emails."*
+**2F (Claude proves it).** Call `o365_whoami` (should be your name/email), then *"List my 5 most recent emails."*
 
 ---
 
