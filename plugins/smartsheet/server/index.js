@@ -12,8 +12,13 @@
  * The PAT lives ONLY in this plugin's local user config (OS keychain) — never bundled,
  * never committed, never sent anywhere but the Cornell n8n webhook over HTTPS.
  *
- * Config (user_config -> env):
+ * Config — TWO ways to supply these, in priority order (both work; see token-loader.js):
+ *   1. the plugin's own settings menu (user_config -> env, names below)
+ *   2. a plain text file the user edits by hand, e.g. ~/.systemsbot/tokens.env, containing a
+ *      line SMARTSHEET_USER_PAT=<your token> — no menus, no admin rights. Auto-created with
+ *      a commented template on first run if no such file exists yet.
  *   SMARTSHEET_WEBHOOK_URL    e.g. https://n8n-dev.lcmain.aaii.cucloud.net/webhook/smartsheet-user
+ *                             (has a built-in default below since it's not a secret)
  *   SMARTSHEET_USER_PAT       the user's own Smartsheet Personal Access Token
  *   SMARTSHEET_ENABLE_WRITE   "true" to register add_rows/update_rows/delete_rows (default off)
  *   SMARTSHEET_GATE_TOKEN     (optional) shared gate-header secret, if the webhook is hardened
@@ -25,40 +30,39 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { resolveSecret, ensureTemplate, missingTokenMessage } from "./token-loader.js";
 
-const WEBHOOK_URL = process.env.SMARTSHEET_WEBHOOK_URL;
-const USER_PAT = process.env.SMARTSHEET_USER_PAT;
+const DEFAULT_WEBHOOK_URL = "https://n8n-dev.lcmain.aaii.cucloud.net/webhook/smartsheet-user";
 const TOKEN_HEADER = process.env.SMARTSHEET_TOKEN_HEADER || "X-Smartsheet-Token";
-const GATE_TOKEN = process.env.SMARTSHEET_GATE_TOKEN; // optional hardening
 const GATE_HEADER = process.env.SMARTSHEET_GATE_HEADER || "X-Gate-Token";
 const TIMEOUT_MS = Number(process.env.SMARTSHEET_TIMEOUT_MS || 60000);
 // Explicit write gate. Off by default — even with a write-scoped PAT, no write tools
 // are registered until the user opts in. The user's PAT permissions remain the hard
-// backstop; this toggle is the explicit consent layer.
+// backstop; this toggle is the explicit consent layer. Not a secret — env-only is fine.
 const WRITE_ENABLED = /^(1|true|yes|on)$/i.test(String(process.env.SMARTSHEET_ENABLE_WRITE || ""));
 
-if (!WEBHOOK_URL) {
-  console.error("SMARTSHEET_WEBHOOK_URL is not set. Configure it in the plugin settings.");
-  process.exit(1);
-}
-if (!USER_PAT) {
-  console.error("SMARTSHEET_USER_PAT is not set. Paste your own Smartsheet Personal Access Token in the plugin settings.");
-  process.exit(1);
-}
+// Auto-create the shared token-file template (fail-soft; never overwrites an existing file).
+ensureTemplate();
 
 const ok = (payload) => ({ content: [{ type: "text", text: typeof payload === "string" ? payload : JSON.stringify(payload, null, 2) }] });
 
 // POST {tool, ...args} to the n8n webhook with the user's PAT in the token header.
 async function callWebhook(tool, args = {}) {
+  const webhookUrl = resolveSecret("SMARTSHEET_WEBHOOK_URL") || DEFAULT_WEBHOOK_URL;
+  const userPat = resolveSecret("SMARTSHEET_USER_PAT");
+  const gateToken = resolveSecret("SMARTSHEET_GATE_TOKEN"); // optional hardening
+  if (!userPat) {
+    throw new Error(missingTokenMessage("SMARTSHEET_USER_PAT", "your Smartsheet Personal Access Token"));
+  }
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(WEBHOOK_URL, {
+    const res = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [TOKEN_HEADER]: USER_PAT,
-        ...(GATE_TOKEN ? { [GATE_HEADER]: GATE_TOKEN } : {}),
+        [TOKEN_HEADER]: userPat,
+        ...(gateToken ? { [GATE_HEADER]: gateToken } : {}),
       },
       body: JSON.stringify({ tool, ...args }),
       signal: ac.signal,
@@ -162,7 +166,7 @@ if (WRITE_ENABLED) {
 }
 
 const server = new Server(
-  { name: "smartsheet", version: "1.0.0" },
+  { name: "smartsheet", version: "1.2.0" },
   { capabilities: { tools: {} } }
 );
 

@@ -3,7 +3,7 @@
 This lets Claude look things up in **your own** Smartsheet account — your sheets, your rows, your workspaces. It only ever sees what *your* Smartsheet account can see. Nobody else's. You do this once.
 
 There are two short steps:
-**A.** Get your personal Smartsheet token. **B.** Paste it into the Claude plugin.
+**A.** Get your personal Smartsheet token. **B.** Give it to the Claude plugin (one file to edit — see below).
 
 ---
 
@@ -25,19 +25,34 @@ A "token" is just a long password that lets Claude act as **you** in Smartsheet 
 
 ---
 
-## B. Paste it into the Claude plugin
+## B. Give it to the Claude plugin
 
-1. In Claude, open the **Smartsheet (your account)** plugin settings.
-   - (Cowork: open the plugin's settings/configure panel. Claude Desktop: **Settings → Extensions → Smartsheet (your account) → Configure**.)
-2. You'll see three settings:
-   - **Smartsheet webhook URL** — leave this as it is (it's already filled in for you).
-   - **Your Smartsheet Personal Access Token** — **paste your token here** (the one you copied in step A).
-   - **Allow write actions (add/update/delete rows)** — **leave OFF** for now. Turn it ON later only if
-     you want Claude to be able to add/update/delete rows on your behalf. (Your token's own permissions are
-     still the hard limit — this toggle is an extra explicit gate.)
-3. Save / Done.
+**Recommended — edit one text file (works no matter what your Claude app looks like):**
 
-That's it. You're connected.
+1. Install/open the **Smartsheet (your account)** plugin once (so it can set up the file for you).
+2. Open this file on your computer — create the `.systemsbot` folder if you don't have it yet:
+   - **Windows:** `C:\Users\<you>\.systemsbot\tokens.env`
+   - **Mac:** `~/.systemsbot/tokens.env`
+3. Find the line that starts with `SMARTSHEET_USER_PAT=` and paste your token right after the `=`
+   (no spaces, no quotes), e.g.:
+   ```
+   SMARTSHEET_USER_PAT=abc123yourtokenhere
+   ```
+4. Save the file, then fully quit and reopen Claude.
+
+This one file works for all the Systems AI Bot plugins — there's a line ready for each one. Nothing to
+click through, no settings menus to hunt for. The file lives only on your computer.
+
+**Alternative — the plugin's settings menu**, if you'd rather use it or your Claude app supports it
+(Cowork: the plugin's settings/configure panel. Claude Desktop: **Settings → Extensions → Smartsheet
+(your account) → Configure**):
+- **Smartsheet webhook URL** — leave this as it is (it's already filled in for you).
+- **Your Smartsheet Personal Access Token** — paste your token here (the one you copied in step A).
+- **Allow write actions (add/update/delete rows)** — **leave OFF** for now. Turn it ON later only if
+  you want Claude to be able to add/update/delete rows on your behalf. (Your token's own permissions are
+  still the hard limit — this toggle is an extra explicit gate.) Save / Done.
+
+Either way works — use whichever is easier to reach in your Claude app. You're connected either way.
 
 ---
 
@@ -58,7 +73,7 @@ Then try:
 
 ## If something's off
 
-- **It shows the wrong person, or an error about the token:** your token may have been mistyped or revoked. Generate a fresh one (Section A) and paste it again (Section B).
+- **It shows the wrong person, or an error about the token:** your token may have been mistyped or revoked. Generate a fresh one (Section A) and paste it again (Section B) — double-check there's no extra space before/after it in the file.
 - **It says no sheets / can't find a sheet:** the connector can only see what your Smartsheet account can see. If a sheet was shared with a *different* email than the one your token belongs to, ask the sheet owner to share it with you, or run `smartsheet_whoami` to confirm which account you're signed in as.
 - **Still stuck:** contact Tim Fraser (tmf77@cornell.edu).
 

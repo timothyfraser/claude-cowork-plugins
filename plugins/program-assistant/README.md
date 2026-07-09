@@ -16,14 +16,15 @@ Claude (Cowork)  →  ask_program  →  POST n8n /webhook/rag-ask (X-RAG-Token)
                                        →  RAG: Query v2 (hybrid retrieve + LLM answer)
                                        →  { answer, sources }
 ```
-The RAG runs on the Cornell n8n instance + Cornell LiteLLM gateway (FERPA-appropriate). **No corpus or model API keys live in this plugin** — only the webhook URL and a shared token, stored in the OS keychain.
+The RAG runs on the Cornell n8n instance + Cornell LiteLLM gateway (FERPA-appropriate). **No corpus or model API keys live in this plugin** — only the webhook URL and a shared token, stored either in the OS keychain (via the plugin's settings menu) or a plain text file the user edits (`~/.systemsbot/tokens.env`).
 
 ## Install
 
 1. Install the `.mcpb` (Claude Desktop: Settings → Extensions → Install Extension) or add as a Cowork plugin.
-2. When prompted, enter:
-   - **RAG webhook URL** — e.g. `https://n8n-dev.lcmain.aaii.cucloud.net/webhook/rag-ask`
-   - **Webhook token** — the `X-RAG-Token` shared secret (from the program administrator).
+2. Supply the webhook token **either** way (both work, see `server/token-loader.js`):
+   - the plugin's own settings menu (`RAG webhook URL` + `Webhook token`), or
+   - edit `~/.systemsbot/tokens.env` (auto-created on first run) and fill in `RAG_WEBHOOK_TOKEN=` —
+     no menus, works even where Extensions/Connectors tabs are restricted.
 3. Try: *"Ask the program assistant what classes are offered in Fall 2026"* or *"Use skill /forms-and-deadlines for graduation"*.
 
 ## Local dev / test

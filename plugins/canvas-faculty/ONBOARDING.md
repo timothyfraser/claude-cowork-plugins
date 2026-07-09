@@ -1,8 +1,9 @@
 # Canvas Faculty Assistant — faculty onboarding (no coding required)
 
 This guide gets you set up to ask Claude about **your own** Cornell Canvas courses and
-students. It takes about 5 minutes. You will paste two things into the plugin's settings:
-**your Canvas token** and a **gate key**. You never write any code.
+students. It takes about 5 minutes. You will supply two secrets — **your Canvas token**
+and a **gate key** — either by editing one text file (recommended, see Step 3) or via the
+plugin's settings menu. You never write any code.
 
 > Why two secrets? The **gate key** is a shared password that lets the program's Canvas
 > assistant accept your request at all. Your **Canvas token** is personal — it makes the
@@ -34,20 +35,36 @@ It is a shared secret for the faculty group. Do not post it anywhere public.
 
 ---
 
-## Step 3 — Add the plugin and paste your secrets
+## Step 3 — Add the plugin and give it your secrets
 
 **In Claude Cowork:** add the **SysEng Canvas Faculty Assistant** plugin (or install the
 `canvas-faculty.mcpb` in Claude Desktop: **Settings → Extensions → Install Extension**).
 
-When prompted (or in the plugin's **Settings**), fill in three fields:
+**Recommended — edit one text file (works no matter what your Claude app looks like):**
+
+1. Open this file on your computer — create the `.systemsbot` folder if you don't have it yet:
+   - **Windows:** `C:\Users\<you>\.systemsbot\tokens.env`
+   - **Mac:** `~/.systemsbot/tokens.env`
+2. Find the lines `CANVAS_API_TOKEN=` and `CANVAS_GATE_KEY=` and paste each secret right after
+   its `=` (no spaces, no quotes):
+   ```
+   CANVAS_API_TOKEN=your-token-from-step-1
+   CANVAS_GATE_KEY=the-gate-key-from-step-2
+   ```
+3. Save the file, then fully quit and reopen Claude.
+
+This one file works for all the Systems AI Bot plugins — there's a line ready for each one.
+
+**Alternative — the plugin's settings menu**, if you'd rather use it (when prompted at install,
+or in the plugin's **Settings**), fill in three fields:
 
 | Field | What to paste |
 |---|---|
-| **Canvas faculty webhook URL** | `https://n8n-dev.lcmain.aaii.cucloud.net/webhook/canvas-faculty` |
+| **Canvas faculty webhook URL** | leave as pre-filled (`https://n8n-dev.lcmain.aaii.cucloud.net/webhook/canvas-faculty`) |
 | **Your Canvas API token (X-Canvas-Token)** | the token you copied in Step 1 |
 | **Gate key (X-Gate-Key)** | the gate key from Step 2 |
 
-Save. Your secrets are stored only on your machine (in your OS keychain).
+Save. Either way, your secrets are stored only on your machine.
 
 ---
 

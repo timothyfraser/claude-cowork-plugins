@@ -1,6 +1,6 @@
 {
   "name": "canvas-faculty",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Ask about your own Cornell Canvas courses and students from Claude — per-faculty, FERPA-scoped to your personal Canvas token via a Cornell-hosted n8n agent. You only ever see your own courses.",
   "author": { "name": "Timothy Fraser" }
 }
